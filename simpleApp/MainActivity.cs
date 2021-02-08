@@ -11,7 +11,7 @@ using Android.Widget;
 
 namespace simpleApp
 {
-    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme.NoActionBar", MainLauncher = true)]
+    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme.NoActionBar")]
     public class MainActivity : AppCompatActivity
     {
         private string username;
@@ -27,9 +27,12 @@ namespace simpleApp
 
             FloatingActionButton fab = FindViewById<FloatingActionButton>(Resource.Id.fab);
             fab.Click += FabOnClick;
-            ISharedPreferences preferences = PreferenceManager.GetDefaultSharedPreferences(mContext);
-            username = preferences.GetString("username", "");
+
+            ISharedPreferences pref = Application.Context.GetSharedPreferences("Username", FileCreationMode.Private); ;
+            username = pref.GetString("Username", String.Empty);
+
             TextView tvUser = FindViewById<TextView>(Resource.Id.tvUser);
+            tvUser.Text = username;
         }
 
         public override bool OnCreateOptionsMenu(IMenu menu)
