@@ -1,6 +1,8 @@
 ﻿using System;
+using Android;
 using Android.App;
 using Android.Content;
+using Android.Graphics;
 using Android.OS;
 using Android.Preferences;
 using Android.Runtime;
@@ -8,6 +10,7 @@ using Android.Support.Design.Widget;
 using Android.Support.V7.App;
 using Android.Views;
 using Android.Widget;
+using Plugin.Media;
 
 namespace simpleApp
 {
@@ -15,6 +18,15 @@ namespace simpleApp
     public class MainActivity : AppCompatActivity
     {
         private string username;
+        Button btnCamera;
+        ImageView ivImage;
+
+        readonly string[] permissionGroup =
+        {
+            Manifest.Permission.ReadExternalStorage,
+            Manifest.Permission.WriteExternalStorage,
+            Manifest.Permission.Camera
+        };
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -25,14 +37,50 @@ namespace simpleApp
             Android.Support.V7.Widget.Toolbar toolbar = FindViewById<Android.Support.V7.Widget.Toolbar>(Resource.Id.toolbar);
             SetSupportActionBar(toolbar);
 
-            FloatingActionButton fab = FindViewById<FloatingActionButton>(Resource.Id.fab);
-            fab.Click += FabOnClick;
+            TextView tvUser = FindViewById<TextView>(Resource.Id.tvUser);
+            Button btnCamera = FindViewById<Button>(Resource.Id.btnCamera);
+            ImageView ivImage = FindViewById<ImageView>(Resource.Id.ivImage);
+            btnCamera.Click += btnCamera_Click;
+            RequestPermissions(permissionGroup, 0);
 
             ISharedPreferences pref = Application.Context.GetSharedPreferences("Username", FileCreationMode.Private); ;
             username = pref.GetString("Username", String.Empty);
 
-            TextView tvUser = FindViewById<TextView>(Resource.Id.tvUser);
             tvUser.Text = username;
+        }
+
+        private void btnCamera_Click(object sender, EventArgs eventArgs)
+        {
+            TakePhoto();
+        }
+
+        async void TakePhoto()
+        {
+            await CrossMedia.Current.Initialize();
+
+            var file = await CrossMedia.Current.TakePhotoAsync(new Plugin.Media.Abstractions.StoreCameraMediaOptions
+            {
+                PhotoSize = Plugin.Media.Abstractions.PhotoSize.Medium,
+                CompressionQuality = 40,
+                Name = "myimage.jpg",
+                Directory = "sample"
+            });
+
+            if (file == null)
+            {
+                return;
+            }
+
+            byte[] imageArray = System.IO.File.ReadAllBytes(file.Path);
+            Bitmap bitmap = BitmapFactory.DecodeByteArray(imageArray, 0, imageArray.Length);
+            ivImage.SetImageBitmap(bitmap);
+        }
+
+        public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Android.Content.PM.Permission[] grantResults)
+        {
+            Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+
+            base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
 
         public override bool OnCreateOptionsMenu(IMenu menu)
@@ -50,20 +98,6 @@ namespace simpleApp
             }
 
             return base.OnOptionsItemSelected(item);
-        }
-
-        private void FabOnClick(object sender, EventArgs eventArgs)
-        {
-            View view = (View)sender;
-            Snackbar.Make(view, "Replace with your own action", Snackbar.LengthLong)
-                .SetAction("Action", (Android.Views.View.IOnClickListener)null).Show();
-        }
-
-        public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)
-        {
-            Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
-
-            base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 }
